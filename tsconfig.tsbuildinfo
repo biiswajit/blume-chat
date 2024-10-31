@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/endpoints/close.ts","./src/endpoints/create.ts","./src/endpoints/index.ts","./src/endpoints/join.ts"],"version":"5.6.3"}
+{"root":["./src/index.ts","./src/db/connectDb.ts","./src/endpoints/close.ts","./src/endpoints/create.ts","./src/endpoints/index.ts","./src/endpoints/join.ts"],"version":"5.6.3"}
