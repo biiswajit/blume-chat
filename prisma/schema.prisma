@@ -1,14 +1,183 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  accounts       Account[]
+  sessions       Session[]
+  enrollments    Enrollment[]
+  classrooms     Classroom[]
+  solutions      Solution[]
+  discussions    Discussion[]
+  participations Participation[]
+  messages       Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Classroom {
+  id          String  @id @default(cuid())
+  name        String
+  description String? @db.Text
+  themeColor  String  @default("#FF6500") @db.VarChar(7)
+  code        String  @unique
+  capacity    Int     @default(20)
+  size        Int     @default(0)
+  createdById String
+
+  enrollments Enrollment[]
+  assignments Assignment[]
+  discussions Discussion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([code])
+}
+
+model Enrollment {
+  id          String @id @default(cuid())
+  classroomId String
+  userId      String
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+  role     Role
+
+  @@unique([classroomId, userId])
+  @@index([userId])
+  @@index([classroomId])
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  file        String
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  classroomId String
+
+  solutions Solution[]
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+model Solution {
+  id           String   @id @default(cuid())
+  file         String
+  createdAt    DateTime @default(now())
+  userId       String
+  assignmentId String
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Discussion {
+  id          String   @id @default(cuid())
+  name        String
+  classroomId String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  code        String   @unique
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  participations Participation[]
+  messages       Message[]
+
+  @@index([code])
+}
+
+model Participation {
+  id           String   @id @default(cuid())
+  discussionId String
+  userId       String
+  joinedAt     DateTime @default(now())
+  role         Role
+
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([discussionId, userId])
+  @@index([userId])
+  @@index([discussionId])
+}
+
+model Message {
+  id           String   @id @default(cuid())
+  content      String?  @db.Text
+  file         String?
+  createdAt    DateTime @default(now())
+  userId       String
+  discussionId String
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@index([discussionId])
+}
+
+enum Role {
+  Student
+  Teacher
 }
