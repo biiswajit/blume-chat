@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { createServer } from "http";
 import WebSocket, { WebSocketServer } from "ws";
 import { router as endpoints } from "./endpoints";
+import { messageHandler } from "./manager/messageHandler";
 
 const app = express(); // create a Express application
 const server = createServer(app); // Create a HTTP server and connects to the express app
@@ -12,7 +13,12 @@ wss.on("connection", function connection(ws: WebSocket) {
   ws.on("error", console.error);
 
   ws.on("message", function message(data) {
-    console.log("received: %s", data);
+    console.log("received: %s", data.toString());
+    try {
+      messageHandler(ws, JSON.parse(data.toString()));
+    } catch (err) {
+      console.error("there is an error : " + err);
+    }
   });
 
   ws.send("something");
