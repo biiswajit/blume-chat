@@ -5,8 +5,8 @@ import generateUniqueCode from "../functions/generateCode";
 
 export type SessionInfo = {
   discussionName?: string;
-  classroomId: string;
   discussionCode?: string;
+  classroomId: string;
   userId: string;
   role: "Teacher" | "Student";
   email: string;

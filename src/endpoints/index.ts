@@ -8,22 +8,12 @@ export const router = Router();
 // post enpoints
 router.post("/create", async function (req: Request, res: Response) {
   const {success, message} = await create(req, res);
-  if (success) {
-    res
-      .json({
-        success: true,
-        message: message,
-      })
-      .status(200);
-  }
-  else {
-    res
-      .json({
-        success: false,
-        message: message,
-      })
-      .status(401);
-  }
+  res
+    .json({
+      success: success,
+      message: message,
+    })
+    .status(success ? 200 : 401);
 });
 
 router.post("/close", function (req: Request, res: Response) {
@@ -31,12 +21,12 @@ router.post("/close", function (req: Request, res: Response) {
   res.send("close");
 });
 
-router.post("/join", function (req: Request, res: Response) {
-  join(req, res);
+router.post("/join", async function (req: Request, res: Response) {
+  const {success, message} = await join(req, res);
   res
     .json({
-      success: true,
-      message: "Joined discussion!",
+      success: success,
+      message: message,
     })
-    .status(200);
+    .status(success ? 200 : 401); 
 });

@@ -3,9 +3,9 @@ import RedisClient from "../db/connectCache";
 import { prisma } from "../db/connectDb";
 
 export type SessionInfo = {
-  name: string;
   classroomId: string;
-  code?: string;
+  discussionName?: string;
+  discussionCode?: string;
   userId: string;
   role: "Teacher" | "Student";
   email: string;
@@ -15,12 +15,7 @@ export type SessionInfo = {
 export default async function (req: Request, res: Response) {
   const sessionId: string | undefined = req.get("authorization");
   if (!sessionId) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized!",
-      })
-      .status(401);
+    return {success: false, message: "Session id not provided"}
   }
 
   const client = await RedisClient.getInstance();
@@ -28,12 +23,7 @@ export default async function (req: Request, res: Response) {
     JSON.stringify(await client?.hGetAll(`session:${sessionId}`)),
   );
   if (!session) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized",
-      })
-      .status(401);
+    return {success: false, message: "Session info not found on redis"}
   }
 
   const validUser = await prisma.enrollment.findFirst({
@@ -43,34 +33,27 @@ export default async function (req: Request, res: Response) {
     },
   });
   if (!validUser) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized",
-      })
-      .status(401);
+    return {success: false, message: "You're not enrolled with the classroom"}
   }
 
   if (session.role !== "Student") {
-    return res
-      .json({
-        success: false,
-        message: "You're unauthorized",
-      })
-      .status(401);
+    return {success: false, message: "You have to be a student to join a discussion"}
   }
 
+  let discussionId: string | undefined;
   try {
     await prisma.$transaction(async (tx) => {
       const discussion = await prisma.discussion.findFirst({
         where: {
-          code: session.code,
+          code: session.discussionCode,
         },
         select: {
           id: true,
           name: true,
+          createdAt: true
         },
       });
+      if (!discussion) throw new Error("discussion not found")
       await prisma.participation.create({
         data: {
           userId: session.userId,
@@ -83,10 +66,18 @@ export default async function (req: Request, res: Response) {
         permission: "Join",
         discussionName: discussion?.name as string,
       });
+      discussionId = discussion.id;
+      await client?.hSet(`discussion:${discussionId}`, {
+        title: discussion.name as string,
+        id: discussionId as string,
+        createdAt: discussion.createdAt.toString(),
+      })
     });
 
     console.log("joined to discussion");
+    return {success: true, message: discussionId}
   } catch (err) {
-    console.error("Failed to join discussion");
+    console.error("Failed to join discussion" + err);
+    return {success: false, message: "either problem with db or redis"}
   }
 }
