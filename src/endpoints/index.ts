@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import close from "./close";
 import create from "./create";
 import join from "./join";
+import chats from "./chats";
 
 export const router = Router();
 
@@ -30,3 +31,11 @@ router.post("/join", async function (req: Request, res: Response) {
     })
     .status(success ? 200 : 401); 
 });
+
+router.post("/chats", async function (req: Request, res: Response) {
+  const {success, message} = await chats(req, res);
+  res.json({
+    success: success,
+    message: message
+  }).status(success ? 200 : 500)
+})
