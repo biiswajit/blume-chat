@@ -6,14 +6,24 @@ import join from "./join";
 export const router = Router();
 
 // post enpoints
-router.post("/create", function (req: Request, res: Response) {
-  create(req, res);
-  res
-    .json({
-      success: true,
-      message: "Discussion created!",
-    })
-    .status(200);
+router.post("/create", async function (req: Request, res: Response) {
+  const {success, message} = await create(req, res);
+  if (success) {
+    res
+      .json({
+        success: true,
+        message: message,
+      })
+      .status(200);
+  }
+  else {
+    res
+      .json({
+        success: false,
+        message: message,
+      })
+      .status(401);
+  }
 });
 
 router.post("/close", function (req: Request, res: Response) {

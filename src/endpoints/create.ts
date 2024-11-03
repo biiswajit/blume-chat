@@ -13,15 +13,11 @@ export type SessionInfo = {
   permission: "Create" | "Join" | "Nil";
 };
 
-export default async function (req: Request, res: Response) {
+export default async function (req: Request, res: Response): Promise<{success: boolean, message: string}> {
   const sessionId: string | undefined = req.get("authorization");
+  console.log(sessionId)
   if (!sessionId) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized!",
-      })
-      .status(401);
+    return {success: false, message: "you're not authorized"}
   }
 
   const client = await RedisClient.getInstance();
@@ -29,13 +25,10 @@ export default async function (req: Request, res: Response) {
     JSON.stringify(await client?.hGetAll(`session:${sessionId}`)),
   );
   if (!session) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized",
-      })
-      .status(401);
+    return {success: false, message: "you're not authorized"}
   }
+
+  console.log(session)
 
   const validUser = await prisma.enrollment.findFirst({
     where: {
@@ -44,25 +37,17 @@ export default async function (req: Request, res: Response) {
     },
   });
   if (!validUser) {
-    return res
-      .json({
-        success: false,
-        message: "You're not authorized",
-      })
-      .status(401);
+    return {success: false, message: "you're not authorized"}
   }
 
+  console.log(validUser)
+
   if (session.role !== "Teacher") {
-    return res
-      .json({
-        success: false,
-        message: "You're unauthorized",
-      })
-      .status(401);
+    return {success: false, message: "you're not authorized"}
   }
 
   const discussionCode: string = await generateUniqueCode(8);
-
+  let discussionId: string | null = null;
   try {
     await prisma.$transaction(async (tx) => {
       const discussion = await tx.discussion.create({
@@ -74,6 +59,7 @@ export default async function (req: Request, res: Response) {
         },
         select: {
           id: true,
+          createdAt: true
         },
       });
 
@@ -89,10 +75,20 @@ export default async function (req: Request, res: Response) {
         permission: "Create",
         discussionCode,
       });
+
+      discussionId = discussion.id;
+      await client?.hSet(`discussion:${discussionId}`, {
+        title: session.discussionName as string,
+        id: discussionId,
+        createdAt: discussion.createdAt.toString(),
+      })
     });
 
     console.log("discussion created");
+    if (discussionId) return {success: true, message: discussionId}
+    else throw new Error("unable to find discussion id")
   } catch (err) {
     console.error("error creating discussion" + err);
+    return {success: false, message: "there are some error"}
   }
 }
