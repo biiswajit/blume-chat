@@ -168,12 +168,12 @@ model Message {
   file         String?
   createdAt    DateTime @default(now())
   userId       String
+  userName     String?
   discussionId String
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, discussionId])
   @@index([discussionId])
 }
 

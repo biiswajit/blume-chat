@@ -2,6 +2,7 @@ import { User } from "./userManager";
 import RedisClient from "../db/connectCache";
 import { RedisClientType } from "redis";
 import { v4 as uuidv4 } from "uuid";
+import { prisma } from "../db/connectDb";
 
 /*
 discussion:{discussionId} = {
@@ -64,6 +65,16 @@ export class ChatManager {
     await this.client?.set(`vote:${chatId}`, 0);
     await this.client?.lPush(`discussion:${discussionId}:votes`, chatId);
     await this.client?.lPush(`discussion:${discussionId}:chats`, chatId);
+
+    await prisma.message.create({
+      data: {
+        id: chatId,
+        content: message,
+        userId: user.id,
+        userName: user.name,
+        discussionId: discussionId,
+      },
+    });
 
     return await this.getChat(chatId);
   }
