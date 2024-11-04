@@ -68,10 +68,8 @@ export class UserManager {
       return;
     }
 
-    discussion?.users.forEach(({ id, conn }) => {
-      if (!(id === userId)) {
-        conn.send(JSON.stringify(message));
-      }
+    discussion?.users.forEach(({ conn }) => {
+      conn.send(JSON.stringify(message));
     });
   }
 }

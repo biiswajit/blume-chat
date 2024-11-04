@@ -10,9 +10,9 @@ const server = createServer(app); // Create a HTTP server and connects to the ex
 const wss = new WebSocketServer({ server }); // Create a Web socket connection instance
 
 var corsOptions = {
-  origin: 'http://localhost:3000',
-  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-}
+  origin: "http://localhost:3000",
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
 app.use(cors(corsOptions));
 
 wss.on("connection", function connection(ws: WebSocket) {
@@ -21,14 +21,12 @@ wss.on("connection", function connection(ws: WebSocket) {
 
   ws.on("message", function message(data) {
     try {
-      console.log(data.toString())
+      console.log(data.toString());
       messageHandler(ws, JSON.parse(data.toString()));
     } catch (err) {
       console.error("there is an error : " + err);
     }
   });
-
-  ws.send("something");
 });
 
 app.use("/", endpoints);
